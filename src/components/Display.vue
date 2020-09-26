@@ -38,17 +38,19 @@
         </tr>
       </tbody>
     </table>
-    <div></div>
-
     <div class="bottom-area">
       <div class="entry-area">
         <input v-model="entry" />
         <button @click="submitEntry">Submit</button>
       </div>
+      <div class="no-more-rule-area">
+        <input v-model="noMoreRule" />
+        <button @click="submitNoMoreRule">Submit</button>
+      </div>
 
       <div class="choose-player">
         <img
-          v-if="player === 'HORNE'"
+          v-if="currentPlayer === 'HORNE'"
           class="player highlighted"
           src="@/assets/horne-light.png"
         />
@@ -59,7 +61,7 @@
           @click="choosePlayer('HORNE')"
         />
         <img
-          v-if="player === 'KEY'"
+          v-if="currentPlayer === 'KEY'"
           class="player highlighted"
           src="@/assets/key-light.png"
         />
@@ -70,7 +72,7 @@
           @click="choosePlayer('KEY')"
         />
         <img
-          v-if="player === 'WATSON'"
+          v-if="currentPlayer === 'WATSON'"
           class="player highlighted"
           src="@/assets/watson-light.png"
         />
@@ -80,6 +82,7 @@
           src="@/assets/watson-transparent.png"
           @click="choosePlayer('WATSON')"
         />
+        <button @click="nextPlayer">Next</button>
       </div>
     </div>
   </div>
@@ -110,23 +113,22 @@ interface Play {
 
 const robotBlipAudio = new Audio(require("@/assets/RobotBlip.mp3"));
 const robotBlip2Audio = new Audio(require("@/assets/RobotBlip2.mp3"));
+
 export default defineComponent({
   name: "HelloWorld",
-  props: {
-    msg: String,
-    playOrder: Array
-  },
-  components: {
-    "little-image": LittleImage
-  },
+  props: ["playOrder"],
   data() {
     return {
-      player: Player.none,
+      playCount: 0,
       entry: "",
       noMoreRule: "",
       logs: [] as Play[]
     };
   },
+  components: {
+    "little-image": LittleImage
+  },
+
   computed: {
     isChallenged() {
       return (index: number): boolean =>
@@ -134,15 +136,15 @@ export default defineComponent({
     },
     getImage() {
       return (p: Player) => require(`@/assets/${p.toLowerCase()}-little.png`);
+    },
+    currentPlayer(): Player {
+      return this.playOrder[this.playCount % this.playOrder.length];
     }
   },
   methods: {
     submitEntry() {
-      if (this.player === Player.none) {
-        return;
-      }
       this.logs.unshift({
-        player: this.player,
+        player: this.currentPlayer,
         entry: this.entry,
         noMoreRule: this.noMoreRule,
         status: Validity.VALID
@@ -152,14 +154,8 @@ export default defineComponent({
       this.noMoreRule = "";
     },
     submitNoMoreRule() {
-      if (this.player === Player.none) {
-        return;
-      }
-    },
-    clearInputs() {
-      this.player = Player.none;
-      this.entry = "";
-      this.noMoreRule = "";
+      const lastLog = this.logs[0];
+      lastLog.noMoreRule = this.noMoreRule;
     },
     challenge(index: number) {
       this.logs[index].status = Validity.CHALLENGED;
@@ -170,9 +166,13 @@ export default defineComponent({
     rejectChallenge(index: number) {
       this.logs[index].status = Validity.REJECTED;
     },
-    choosePlayer(player: Player) {
-      this.player = player;
-
+    choosePlayer(player: Player | string) {
+      const index = this.playOrder.indexOf(player);
+      this.playCount = index;
+      robotBlipAudio.play();
+    },
+    nextPlayer() {
+      this.playCount += 1;
       robotBlipAudio.play();
     }
   }

@@ -1,6 +1,6 @@
 <template>
   <div class="home">
-    <Display />
+    <Display :playOrder="['HORNE', 'KEY', 'WATSON']" />
   </div>
 </template>
 
