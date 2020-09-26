@@ -1,16 +1,16 @@
 <template>
   <div class="home">
-    <Entry msg="No More Jockeys" />
+    <Display />
   </div>
 </template>
 
 <script lang="ts">
 import { defineComponent } from "vue";
-import Entry from "@/components/Entry.vue";
+import Display from "@/components/Display.vue";
 export default defineComponent({
   name: "Home",
   components: {
-    Entry
+    Display
   }
 });
 </script>
