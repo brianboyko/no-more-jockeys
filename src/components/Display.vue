@@ -1,43 +1,45 @@
 <template>
   <h1>NO MORE JOCKEYS</h1>
+  <h2><timer-timer /></h2>
   <div class="jockey-entry">
-    <table>
-      <thead>
-        <tr>
-          <th>Play #</th>
-          <th>Player</th>
-          <th>Answer</th>
-          <th>No More...</th>
-          <th>Status</th>
-          <th />
-        </tr>
-      </thead>
-      <tbody>
-        <tr
-          v-for="(log, index) in logs"
-          :key="log.entry"
-          :class="{ 'light-bg': index % 2 === 0, 'dark-bg': index % 2 === 1 }"
-        >
-          <td>{{ logs.length - index }}</td>
-          <td>
-            <little-image :name="log.player" :src="getImage(log.player)" />
-          </td>
-          <td>{{ log.entry }}</td>
-          <td>{{ log.noMoreRule }}</td>
-          <td>{{ log.status }}</td>
+    <div
+      v-for="(log, index) in logs"
+      :key="log.entry"
+      class="display"
+      :class="{ 'light-bg': index % 2 === 0, 'dark-bg': index % 2 === 1 }"
+    >
+      <template v-if="log.status !== 'REJECTED'">
+        <div>
+          <div v-if="isChallenged(index)">
+            <button @click="cancelChallenge(index)">Cancel</button>
+            <button @click="rejectChallenge(index)">Reject</button>
+          </div>
+          <div v-else>
+            <button @click="challenge(index)">Challenge</button>
+          </div>
+        </div>
+        <div class="display-image">
+          <little-image :name="log.player" :src="getImage(log.player)" />
+        </div>
+        <div class="display-white-yellow">
+          <div
+            :class="{ 'display-entry__challenged': isChallenged(index) }"
+            class="display-entry"
+          >
+            {{ log.entry }}<span v-if="isChallenged(index)"> - CHALLENGED</span>
+          </div>
+          <div class="display-no-more-rule">
+            <span v-if="log.noMoreRule === ''">&nbsp;</span>
+            <template v-else>
+              <span class="no-more">NO MORE </span>{{ log.noMoreRule }}
+            </template>
+          </div>
+        </div>
 
-          <td>
-            <div v-if="isChallenged(index)">
-              <button @click="cancelChallenge(index)">Cancel</button>
-              <button @click="rejectChallenge(index)">Reject</button>
-            </div>
-            <div v-else>
-              <button @click="challenge(index)">Challenge</button>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+        <div>{{ log.status }}</div>
+      </template>
+    </div>
+
     <div class="bottom-area">
       <div class="entry-area">
         <input v-model="entry" />
@@ -91,6 +93,7 @@
 <script lang="ts">
 import { defineComponent } from "vue";
 import LittleImage from "@/components/LittleImage.vue";
+import Timer from "@/components/Timer.vue";
 
 enum Validity {
   VALID = "VALID",
@@ -126,7 +129,8 @@ export default defineComponent({
     };
   },
   components: {
-    "little-image": LittleImage
+    "little-image": LittleImage,
+    "timer-timer": Timer
   },
 
   computed: {
@@ -210,5 +214,49 @@ table {
 }
 .dark-bg {
   background-color: rgba(0, 0, 0, 0.5);
+}
+.display {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+}
+.display-image {
+  margin: 2px;
+  margin-right: 20px;
+}
+.display-white-yellow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+.display-entry {
+  background-color: #ffc806;
+  width: 100%;
+  color: black;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 2px;
+  &__challenged {
+    color: white;
+    background-color: #642102;
+    & span {
+      font-weight: 300;
+      letter-spacing: 0;
+      text-decoration: italic;
+    }
+  }
+}
+.display-no-more-rule {
+  background-color: white;
+  width: 100%;
+  color: black;
+  text-transform: uppercase;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  &.no-more {
+    font-weight: 300;
+  }
 }
 </style>
