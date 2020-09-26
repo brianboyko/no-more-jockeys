@@ -8,36 +8,41 @@
       class="display"
       :class="{ 'light-bg': index % 2 === 0, 'dark-bg': index % 2 === 1 }"
     >
-      <template v-if="log.status !== 'REJECTED'">
-        <div>
-          <div v-if="isChallenged(index)">
-            <button @click="cancelChallenge(index)">Cancel</button>
-            <button @click="rejectChallenge(index)">Reject</button>
-          </div>
-          <div v-else>
-            <button @click="challenge(index)">Challenge</button>
-          </div>
+      <div>
+        <div v-if="isChallenged(index)">
+          <button @click="cancelChallenge(index)">Cancel</button>
+          <button @click="rejectChallenge(index)">Reject</button>
         </div>
-        <div class="display-image">
-          <little-image :name="log.player" :src="getImage(log.player)" />
+        <div v-else>
+          <button @click="challenge(index)">Challenge</button>
         </div>
-        <div class="display-white-yellow">
-          <div
-            :class="{ 'display-entry__challenged': isChallenged(index) }"
-            class="display-entry"
-          >
-            {{ log.entry }}<span v-if="isChallenged(index)"> - CHALLENGED</span>
-          </div>
-          <div class="display-no-more-rule">
-            <span v-if="log.noMoreRule === ''">&nbsp;</span>
-            <template v-else>
-              <span class="no-more">NO MORE </span>{{ log.noMoreRule }}
-            </template>
-          </div>
+      </div>
+      <div class="display-image">
+        <little-image :name="log.player" :src="getImage(log.player)" />
+      </div>
+      <div class="display-white-yellow">
+        <div
+          :class="{
+            'display-entry__challenged': isChallenged(index),
+            'display-entry__rejected': isRejected(index)
+          }"
+          class="display-entry"
+        >
+          {{ log.entry }}<span v-if="isChallenged(index)"> - CHALLENGED</span>
+          <span v-if="isRejected(index)"> - REJECTED</span>
         </div>
-
-        <div>{{ log.status }}</div>
-      </template>
+        <div
+          class="display-no-more-rule"
+          :class="{
+            'display-no-more-rule__rejected': isRejected(index)
+          }"
+        >
+          <span v-if="log.noMoreRule === ''">&nbsp;</span>
+          <template v-else>
+            <span class="no-more">NO MORE </span>{{ log.noMoreRule }}
+          </template>
+        </div>
+      </div>
     </div>
 
     <div class="bottom-area">
@@ -84,7 +89,6 @@
           src="@/assets/watson-transparent.png"
           @click="choosePlayer('WATSON')"
         />
-        <button @click="nextPlayer">Next</button>
       </div>
     </div>
   </div>
@@ -137,6 +141,10 @@ export default defineComponent({
     isChallenged() {
       return (index: number): boolean =>
         this.logs[index].status === Validity.CHALLENGED;
+    },
+    isRejected() {
+      return (index: number): boolean =>
+        this.logs[index].status === Validity.REJECTED;
     },
     getImage() {
       return (p: Player) => require(`@/assets/${p.toLowerCase()}-little.png`);
@@ -238,13 +246,16 @@ table {
   font-weight: 600;
   letter-spacing: 2px;
   &__challenged {
-    color: white;
-    background-color: #642102;
     & span {
       font-weight: 300;
       letter-spacing: 0;
       text-decoration: italic;
+      color: #ff0032;
     }
+  }
+  &__rejected {
+    background-color: #ff0032;
+    color: white;
   }
 }
 .display-no-more-rule {
@@ -255,6 +266,9 @@ table {
   font-size: 20px;
   font-weight: 600;
   letter-spacing: 2px;
+  &__rejected {
+    color: #ff0032;
+  }
   &.no-more {
     font-weight: 300;
   }
