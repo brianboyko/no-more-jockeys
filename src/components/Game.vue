@@ -44,7 +44,7 @@
           class="display-entry"
         >
           {{ log.entry }}
-          <span v-if="isRejected(index)"> - REJECTED</span>
+          <span v-if="isRejected(index)"> - OUT</span>
         </div>
         <div
           class="display-no-more-rule"
