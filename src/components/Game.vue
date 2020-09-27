@@ -1,7 +1,11 @@
 <template>
-  <h1>NO MORE JOCKEYS</h1>
+  <h2>NO MORE JOCKEYS</h2>
   <div>
-    <div class="jockey-entry">
+    <div class="winner-area" v-if="!!winner">
+      <h1>WINNER</h1>
+      <winner-winner :winner="winner" />
+    </div>
+    <div v-if="!winner" class="jockey-entry">
       <div class="display-image">
         <little-image :name="currentPlayer" :src="getImage(currentPlayer)" />
       </div>
@@ -28,33 +32,18 @@
       </div>
     </div>
     <hr />
-    <div
-      v-for="(log, index) in logs"
-      :key="log.entry"
-      class="display"
-      :class="{ 'light-bg': index % 2 === 0, 'dark-bg': index % 2 === 1 }"
-    >
-      <!-- <div>
-        <div v-if="isChallenged(index)">
-          <button @click="cancelChallenge(index)">Cancel</button>
-          <button @click="rejectChallenge(index)">Reject</button>
-        </div>
-        <div v-else>
-          <button @click="challenge(index)">Challenge</button>
-        </div>
-      </div> -->
+    <div v-for="(log, index) in logs" :key="log.entry" class="display">
       <div class="display-image">
         <little-image :name="log.player" :src="getImage(log.player)" />
       </div>
       <div class="display-white-yellow">
         <div
           :class="{
-            'display-entry__challenged': isChallenged(index),
             'display-entry__rejected': isRejected(index)
           }"
           class="display-entry"
         >
-          {{ log.entry }}<span v-if="isChallenged(index)"> - CHALLENGED</span>
+          {{ log.entry }}
           <span v-if="isRejected(index)"> - REJECTED</span>
         </div>
         <div
@@ -71,7 +60,7 @@
       </div>
     </div>
 
-    <div class="bottom-area">
+    <div v-if="!winner" class="bottom-area">
       <div class="choose-player">
         <img
           v-if="currentPlayer === 'HORNE'"
@@ -81,8 +70,8 @@
         <img
           v-else
           class="player"
+          :class="{ eliminated: rejected.includes('HORNE') }"
           src="@/assets/horne-transparent.png"
-          @click="choosePlayer('HORNE')"
         />
         <img
           v-if="currentPlayer === 'KEY'"
@@ -92,8 +81,8 @@
         <img
           v-else
           class="player"
+          :class="{ eliminated: rejected.includes('KEY') }"
           src="@/assets/key-transparent.png"
-          @click="choosePlayer('KEY')"
         />
         <img
           v-if="currentPlayer === 'WATSON'"
@@ -103,8 +92,8 @@
         <img
           v-else
           class="player"
+          :class="{ eliminated: rejected.includes('WATSON') }"
           src="@/assets/watson-transparent.png"
-          @click="choosePlayer('WATSON')"
         />
       </div>
     </div>
@@ -114,6 +103,7 @@
 <script lang="ts">
 import { defineComponent } from "vue";
 import LittleImage from "@/components/LittleImage.vue";
+import Winner from "@/components/Winner.vue";
 
 enum Validity {
   VALID = "VALID",
@@ -144,23 +134,19 @@ export default defineComponent({
   props: ["playOrder"],
   data() {
     return {
-      playCount: 0,
       entry: "",
       noMoreRule: "",
       logs: [] as Play[],
-      currentIsChallenged: false,
-      currentIsRejected: false
+      rejected: [] as Player[],
+      currentPlayer: this.playOrder[0]
     };
   },
   components: {
-    "little-image": LittleImage
+    "little-image": LittleImage,
+    "winner-winner": Winner
   },
 
   computed: {
-    isChallenged() {
-      return (index: number): boolean =>
-        this.logs[index].status === Validity.CHALLENGED;
-    },
     isRejected() {
       return (index: number): boolean =>
         this.logs[index].status === Validity.REJECTED;
@@ -168,8 +154,14 @@ export default defineComponent({
     getImage() {
       return (p: Player) => require(`@/assets/${p.toLowerCase()}-little.png`);
     },
-    currentPlayer(): Player {
-      return this.playOrder[this.playCount % this.playOrder.length];
+    winner(): false | Player {
+      if (this.rejected.length === 2) {
+        return this.playOrder.filter(
+          (p: Player) => !this.rejected.includes(p)
+        )[0];
+      } else {
+        return false;
+      }
     }
   },
   methods: {
@@ -203,15 +195,25 @@ export default defineComponent({
       rejectAudio.play();
       this.entry = "";
       this.noMoreRule = "";
+      this.rejected.push(this.currentPlayer);
       this.nextPlayer();
     },
     choosePlayer(player: Player | string) {
-      const index = this.playOrder.indexOf(player);
-      this.playCount = index;
+      this.currentPlayer = player;
       robotBlipAudio.play();
     },
     nextPlayer() {
-      this.playCount += 1;
+      if (this.rejected.length === this.playOrder.length) {
+        alert(`Nuts`);
+        return;
+      }
+      console.log(this.rejected.map(x => x));
+      let pos = this.playOrder.indexOf(this.currentPlayer);
+      pos = (pos + 1) % this.playOrder.length;
+      while (this.rejected.includes(this.playOrder[pos])) {
+        pos = (pos + 1) % this.playOrder.length;
+      }
+      this.currentPlayer = this.playOrder[pos];
       robotBlipAudio.play();
     }
   }
@@ -220,11 +222,11 @@ export default defineComponent({
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped lang="scss">
-h1 {
+h1,
+h2 {
   font-weight: 300;
   letter-spacing: 10px;
   text-align: center;
-  font-size: 50px;
 }
 .bold {
   font-weight: 600;
@@ -242,11 +244,15 @@ h1 {
 .highlighted {
   filter: drop-shadow(0px -2px 0px #ffc806) drop-shadow(-3px -3px 10px white);
 }
+.eliminated {
+  filter: drop-shadow(0px 0px 2px #ff0032);
+}
 .bottom-area {
   position: fixed;
   bottom: 0;
   width: 100%;
   background-color: rgba(0, 0, 0, 0.8);
+  padding-top: 20px;
 }
 .choose-player {
   width: 100%;
@@ -373,6 +379,8 @@ h1 {
     letter-spacing: 2px;
 
     cursor: text;
+  }
+  .winner-area {
   }
 }
 </style>
