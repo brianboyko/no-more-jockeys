@@ -1,14 +1,40 @@
 <template>
   <h1>NO MORE JOCKEYS</h1>
-  <h2><timer-timer /></h2>
-  <div class="jockey-entry">
+  <div>
+    <div class="jockey-entry">
+      <div class="display-image">
+        <little-image :name="currentPlayer" :src="getImage(currentPlayer)" />
+      </div>
+      <div class="jockey-editable">
+        <div class="display-white-yellow">
+          <input class="display-entry__edit" v-model="entry" />
+          <div class="display-no-more-rule">
+            NO MORE
+            <input class="display-no-more-rule__edit" v-model="noMoreRule" />
+          </div>
+        </div>
+      </div>
+      <div class="accept-reject">
+        <img
+          @click="submitEntry"
+          class="accept-button"
+          src="@/assets/accept.svg"
+        />
+        <img
+          @click="rejectEntry"
+          class="reject-button"
+          src="@/assets/reject.svg"
+        />
+      </div>
+    </div>
+    <hr />
     <div
       v-for="(log, index) in logs"
       :key="log.entry"
       class="display"
       :class="{ 'light-bg': index % 2 === 0, 'dark-bg': index % 2 === 1 }"
     >
-      <div>
+      <!-- <div>
         <div v-if="isChallenged(index)">
           <button @click="cancelChallenge(index)">Cancel</button>
           <button @click="rejectChallenge(index)">Reject</button>
@@ -16,7 +42,7 @@
         <div v-else>
           <button @click="challenge(index)">Challenge</button>
         </div>
-      </div>
+      </div> -->
       <div class="display-image">
         <little-image :name="log.player" :src="getImage(log.player)" />
       </div>
@@ -39,22 +65,13 @@
         >
           <span v-if="log.noMoreRule === ''">&nbsp;</span>
           <template v-else>
-            <span class="no-more">NO MORE </span>{{ log.noMoreRule }}
+            {{ log.noMoreRule }}
           </template>
         </div>
       </div>
     </div>
 
     <div class="bottom-area">
-      <div class="entry-area">
-        <input v-model="entry" />
-        <button @click="submitEntry">Submit</button>
-      </div>
-      <div class="no-more-rule-area">
-        <input v-model="noMoreRule" />
-        <button @click="submitNoMoreRule">Submit</button>
-      </div>
-
       <div class="choose-player">
         <img
           v-if="currentPlayer === 'HORNE'"
@@ -97,7 +114,6 @@
 <script lang="ts">
 import { defineComponent } from "vue";
 import LittleImage from "@/components/LittleImage.vue";
-import Timer from "@/components/Timer.vue";
 
 enum Validity {
   VALID = "VALID",
@@ -119,7 +135,9 @@ interface Play {
 }
 
 const robotBlipAudio = new Audio(require("@/assets/RobotBlip.mp3"));
-const robotBlip2Audio = new Audio(require("@/assets/RobotBlip2.mp3"));
+// const robotBlip2Audio = new Audio(require("@/assets/RobotBlip2.mp3"));
+const acceptAudio = new Audio(require("@/assets/accept.wav"));
+const rejectAudio = new Audio(require("@/assets/reject.wav"));
 
 export default defineComponent({
   name: "HelloWorld",
@@ -129,12 +147,13 @@ export default defineComponent({
       playCount: 0,
       entry: "",
       noMoreRule: "",
-      logs: [] as Play[]
+      logs: [] as Play[],
+      currentIsChallenged: false,
+      currentIsRejected: false
     };
   },
   components: {
-    "little-image": LittleImage,
-    "timer-timer": Timer
+    "little-image": LittleImage
   },
 
   computed: {
@@ -154,29 +173,37 @@ export default defineComponent({
     }
   },
   methods: {
+    editEntry(event: any) {
+      console.log(event);
+      this.entry = event.target.innerText;
+    },
+    editNoMoreRule(event: any) {
+      console.log(event);
+      this.noMoreRule = event.target.innerText;
+    },
     submitEntry() {
       this.logs.unshift({
         player: this.currentPlayer,
         entry: this.entry,
-        noMoreRule: this.noMoreRule,
+        noMoreRule: `NO MORE ${this.noMoreRule}`,
         status: Validity.VALID
       });
-      robotBlip2Audio.play();
+      acceptAudio.play();
       this.entry = "";
       this.noMoreRule = "";
+      this.nextPlayer();
     },
-    submitNoMoreRule() {
-      const lastLog = this.logs[0];
-      lastLog.noMoreRule = this.noMoreRule;
-    },
-    challenge(index: number) {
-      this.logs[index].status = Validity.CHALLENGED;
-    },
-    cancelChallenge(index: number) {
-      this.logs[index].status = Validity.VALID;
-    },
-    rejectChallenge(index: number) {
-      this.logs[index].status = Validity.REJECTED;
+    rejectEntry() {
+      this.logs.unshift({
+        player: this.currentPlayer,
+        entry: this.entry,
+        noMoreRule: `NO MORE ${this.noMoreRule}`,
+        status: Validity.REJECTED
+      });
+      rejectAudio.play();
+      this.entry = "";
+      this.noMoreRule = "";
+      this.nextPlayer();
     },
     choosePlayer(player: Player | string) {
       const index = this.playOrder.indexOf(player);
@@ -199,9 +226,14 @@ h1 {
   text-align: center;
   font-size: 50px;
 }
-table {
+.jockey-entry {
+  display: flex;
+  flex-direction: row;
   width: 100%;
-  border-collapse: collapse;
+  align-items: center;
+}
+.jockey-editable {
+  width: 100%;
 }
 .highlighted {
   filter: drop-shadow(0px -2px 0px #ffc806) drop-shadow(-3px -3px 10px white);
@@ -231,6 +263,8 @@ table {
 .display-image {
   margin: 2px;
   margin-right: 20px;
+  min-width: 75px;
+  text-align: center;
 }
 .display-white-yellow {
   display: flex;
@@ -238,13 +272,43 @@ table {
   align-items: center;
   width: 100%;
 }
+.accept-reject {
+  display: flex;
+  flex-wrap: no-wrap;
+  flex-direction: row;
+  margin: 0 25px;
+  align-items: center;
+  justify-content: flex-end;
+}
+.accept-button {
+  height: 50px;
+  width: 50px;
+  filter: drop-shadow(0px 0px 10px white);
+  cursor: pointer;
+  &:hover {
+    cursor: pointer;
+    filter: drop-shadow(0px 0px 10px white) brightness(0) invert(1);
+  }
+}
+.reject-button {
+  height: 50px;
+  width: 50px;
+  filter: drop-shadow(0px 0px 10px white);
+  cursor: pointer;
+  &:hover {
+    cursor: pointer;
+    filter: drop-shadow(0px 0px 10px white) brightness(0) invert(1);
+  }
+}
 .display-entry {
   background-color: #ffc806;
   width: 100%;
+  box-sizing: border-box;
   color: black;
   text-transform: uppercase;
   font-weight: 600;
   letter-spacing: 2px;
+  padding: 0px 5px;
   &__challenged {
     & span {
       font-weight: 300;
@@ -258,19 +322,50 @@ table {
     color: white;
   }
 }
+.display-entry__edit {
+  background-color: #ffc806;
+  width: 100%;
+  color: black;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 2px;
+  border: 0;
+  box-sizing: border-box;
+  padding: 5px 5px;
+  font-size: 20px;
+}
 .display-no-more-rule {
+  display: flex;
+  flex-direction: row;
+  box-sizing: border-box;
+  padding: 0px 5px;
+  justify-content: flex-start;
+  align-items: center;
   background-color: white;
   width: 100%;
   color: black;
   text-transform: uppercase;
   font-size: 20px;
-  font-weight: 600;
+  font-weight: 300;
   letter-spacing: 2px;
+  cursor: default;
   &__rejected {
     color: #ff0032;
   }
   &.no-more {
     font-weight: 300;
+  }
+  &__edit {
+    font-size: 20px;
+    padding: 0;
+    margin: 0;
+    flex-grow: 1;
+    margin-left: 10px;
+    font-weight: 600;
+    box-sizing: border-box;
+    border: 0;
+    text-transform: uppercase;
+    cursor: text;
   }
 }
 </style>
