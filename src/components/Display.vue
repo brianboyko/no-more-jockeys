@@ -65,8 +65,8 @@
         >
           <span v-if="log.noMoreRule === ''">&nbsp;</span>
           <template v-else>
-            {{ log.noMoreRule }}
-          </template>
+            NO MORE <span class="bold">{{ log.noMoreRule }}</span></template
+          >
         </div>
       </div>
     </div>
@@ -185,7 +185,7 @@ export default defineComponent({
       this.logs.unshift({
         player: this.currentPlayer,
         entry: this.entry,
-        noMoreRule: `NO MORE ${this.noMoreRule}`,
+        noMoreRule: this.noMoreRule,
         status: Validity.VALID
       });
       acceptAudio.play();
@@ -197,7 +197,7 @@ export default defineComponent({
       this.logs.unshift({
         player: this.currentPlayer,
         entry: this.entry,
-        noMoreRule: `NO MORE ${this.noMoreRule}`,
+        noMoreRule: this.noMoreRule,
         status: Validity.REJECTED
       });
       rejectAudio.play();
@@ -225,6 +225,10 @@ h1 {
   letter-spacing: 10px;
   text-align: center;
   font-size: 50px;
+}
+.bold {
+  font-weight: 600;
+  margin-left: 6px;
 }
 .jockey-entry {
   display: flex;
@@ -333,6 +337,7 @@ h1 {
   box-sizing: border-box;
   padding: 5px 5px;
   font-size: 20px;
+  letter-spacing: 2px;
 }
 .display-no-more-rule {
   display: flex;
@@ -365,6 +370,8 @@ h1 {
     box-sizing: border-box;
     border: 0;
     text-transform: uppercase;
+    letter-spacing: 2px;
+
     cursor: text;
   }
 }
